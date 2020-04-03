@@ -1,7 +1,10 @@
 import urllib
-from flask import session, redirect, url_for, escape, request, render_template, make_response
+from flask import session, redirect, url_for, escape, request, render_template, make_response, Blueprint
 
-from requestbin import app, db
+import requestbin.db as db
+
+views = Blueprint('views', __name__)
+
 
 def update_recent_bins(name):
     if 'recent' not in session:
@@ -26,38 +29,32 @@ def expand_recent_bins():
             session.modified = True
     return recent
 
-@app.endpoint('views.home')
+
+@views.route('/')
 def home():
     return render_template('home.html', recent=expand_recent_bins())
 
 
-@app.endpoint('views.bin')
-def bin(name):
+@views.route(
+    '/<path:name>',
+    methods=[
+        'GET', 'POST', 'DELETE', 'PUT',
+        'OPTIONS', 'HEAD', 'PATCH', 'TRACE'
+    ]
+)
+def view_bin(name):
     try:
         bin = db.lookup_bin(name)
     except KeyError:
         return "Not found\n", 404
-    if request.query_string == 'inspect':
+    if request.query_string.decode() == 'inspect':
         if bin.private and session.get(bin.name) != bin.secret_key:
             return "Private bin\n", 403
         update_recent_bins(name)
         return render_template('bin.html',
-            bin=bin,
-            base_url=request.scheme+'://'+request.host)
+                               bin=bin,
+                               base_url=request.scheme+'://'+request.host)
     else:
         db.create_request(bin, request)
         resp = make_response("ok\n")
-        resp.headers['Sponsored-By'] = "https://www.runscope.com"
         return resp
-
-
-@app.endpoint('views.docs')
-def docs(name):
-    doc = db.lookup_doc(name)
-    if doc:
-        return render_template('doc.html',
-                content=doc['content'],
-                title=doc['title'],
-                recent=expand_recent_bins())
-    else:
-        return "Not found", 404

@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 
 import time
-import cPickle as pickle
+import pickle
 
 import redis
 

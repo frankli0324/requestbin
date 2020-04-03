@@ -1,7 +1,6 @@
 gevent
 ProxyTypes
 nose
-wsgiref
 feedparser
 Flask-Cors
 redis

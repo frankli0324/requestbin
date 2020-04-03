@@ -33,16 +33,17 @@ class Bin(object):
             private=self.private, 
             color=self.color, 
             name=self.name,
-            request_count=self.request_count)
+            request_count=self.request_count
+        )
 
     def dump(self):
         o = copy.copy(self.__dict__)
         o['requests'] = [r.dump() for r in self.requests]
-        return msgpack.dumps(o)
+        return msgpack.dumps(o, use_bin_type=True)
 
     @staticmethod
     def load(data):
-        o = msgpack.loads(data)
+        o = msgpack.loads(data, encoding='utf-8')
         o['requests'] = [Request.load(r) for r in o['requests']]
         b = Bin()
         b.__dict__ = o
@@ -55,7 +56,7 @@ class Bin(object):
     def add(self, request):
         self.requests.insert(0, Request(request))
         if len(self.requests) > self.max_requests:
-            for _ in xrange(self.max_requests, len(self.requests)):
+            for _ in range(self.max_requests, len(self.requests)):
                 self.requests.pop(self.max_requests)
 
 
@@ -122,7 +123,7 @@ class Request(object):
         r = Request()
         try:
             r.__dict__ = msgpack.loads(data, encoding="utf-8")
-        except (UnicodeDecodeError):
+        except UnicodeDecodeError:
             r.__dict__ = msgpack.loads(data, encoding="ISO-8859-1")
 
         return r
